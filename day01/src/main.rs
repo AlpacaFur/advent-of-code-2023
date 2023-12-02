@@ -1,7 +1,5 @@
 use std::fs;
 
-use regex::{Regex, Match};
-
 fn main() {
     println!("Part 1");
     println!("{}", part1());
@@ -20,7 +18,7 @@ fn part1() -> i32 {
 }
 
 fn part2() -> i32 {
-    let contents = fs::read_to_string("broken_case")
+    let contents = fs::read_to_string("input")
         .expect("missing input file!");
     
     contents
@@ -67,25 +65,30 @@ fn line_to_number(line: &str) -> i32 {
 }
 
 
+const NUMS: &[&str] = &["zero","one","two","three","four","five","six","seven","eight","nine"];
+
+fn number_starting_at_index(index: usize, char: char, line: &str) -> Option<String> {
+    if char.is_ascii_digit() {
+        Some(string_to_num_string(&char.to_string()))
+    } else {
+        NUMS.iter().find_map(|num_str| {
+            if line[index..].starts_with(num_str) {
+                Some(string_to_num_string(num_str))
+            } else {
+                None
+            }
+        })
+    } 
+}
 
 fn line_to_number_including_hybrids(line: &str) -> i32 {
-    let regex = Regex::new("\\d|zero|one|two|three|four|five|six|seven|eight|nine")
-    .expect("expected to be a valid regex");
+    let first = line.char_indices().find_map(|(index, char)| {
+        number_starting_at_index(index, char, line)
+    }).expect("expected at least one number in line");
 
-    let first_match = regex.find(line)
-        .expect("expected at least one number");
-
-    let first = string_to_num_string(first_match.as_str());
-
-    let first_index = first_match.start();
-    let last_matches_excluding_first = regex.find_iter(&line[first_index + 1..]);
-
-    let last = last_matches_excluding_first
-        .last()
-        .as_ref()
-        .map(Match::as_str)
-        .map(string_to_num_string)
-        .unwrap_or(first.to_owned());
+    let last = line.char_indices().rev().find_map(|(index, char)| {
+        number_starting_at_index(index, char, line)
+    }).unwrap_or(first.to_owned());
 
     let num = first + &last;
 
